@@ -1,0 +1,22 @@
+# Template file for 'rmview'
+pkgname=rmview
+version=3.1
+revision=1
+# wrksrc=rmview
+build_style=python3-module
+# hostmakedepends="git"
+makedepends="python3-setuptools python3-PyQt5-devel-tools python3-importlib_metadata"
+depends="python3-PyQt5 python3-paramiko python3-Twisted python3-PyJWT"
+short_desc="Live viewer for reMarkable written in PyQt5"
+maintainer="dkwo <nicolopiazzalunga@gmail.com>"
+license="GPL-3.0-or-later"
+homepage="https://github.com/bordaigorl/rmview"
+distfiles="https://github.com/bordaigorl/rmview/archive/refs/tags/v${version}.tar.gz"
+checksum=72bc5cced350ed37f39b9016f83f431720d39daec6b0644f72b4dbbe267d60d7
+make_check=no
+
+# do_fetch() {
+#	git clone https://github.com/bordaigorl/rmview ${wkrsrc} --depth 1
+#	cd ${wrksrc}
+#	git checkout vnc
+# }
