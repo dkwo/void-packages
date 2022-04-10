@@ -1,0 +1,19 @@
+# Template file for 'python3-jupyter_kernel_driver'
+pkgname=python3-jupyter_kernel_driver
+version=0.0.7
+revision=1
+wrksrc="kernel_driver-${version}"
+build_style=python3-module
+hostmakedepends="python3-setuptools"
+short_desc="Library for executing code in a Jupyter kernel"
+maintainer="Gonzalo Tornaría <tornaria@cmat.edu.uy>"
+license="MIT"
+homepage="https://github.com/davidbrochart/kernel_driver"
+distfiles="${PYPI_SITE}/k/kernel_driver/kernel_driver-${version}.tar.gz"
+checksum=1fe9add2cc14851246e1527c8d878514f7cf5511d05bf1176f7d36c4cb43a763
+# there is no testsuite, pytest fails with error 5
+make_check=no
+
+post_install() {
+	vlicense LICENSE
+}
