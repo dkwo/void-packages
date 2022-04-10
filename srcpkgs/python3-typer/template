@@ -1,0 +1,33 @@
+# Template file for 'python3-typer'
+pkgname=python3-typer
+version=0.4.1
+revision=1
+wrksrc="typer-${version}"
+build_style=python3-pep517
+# the first two need 'shellingham' module
+# the other two seem broken (?)
+make_check_args="
+ --ignore=tests/test_others.py
+ --ignore tests/test_completion/test_completion_install.py
+ -k not((test_show_completion)or(test_install_completion))"
+hostmakedepends="python3-flit_core"
+depends="python3-click"
+checkdepends="$depends unzip python3-pytest python3-coverage"
+short_desc="Build CLIs based on python type hints"
+maintainer="Gonzalo Tornaría <tornaria@cmat.edu.uy>"
+license="MIT"
+homepage="https://github.com/tiangolo/typer"
+distfiles="${PYPI_SITE}/t/typer/typer-${version}.tar.gz"
+checksum=5646aef0d936b2c761a10393f0384ee6b5c7fe0bb3e5cd710b17134ca1d99cff
+
+pre_check() {
+	# I copied this hack from python3-quart
+	mkdir -p test
+	# -o = overwrite, or else this fails the second time
+	unzip -o typer-${version}-*-*-*.whl -d test
+	export PYTHONPATH=test
+}
+
+post_install() {
+	vlicense LICENSE
+}
