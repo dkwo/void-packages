@@ -1,0 +1,18 @@
+# Template file for 'xcursor-plan9'
+pkgname=xcursor-plan9
+version=0.2
+revision=1
+wrksrc=plan9
+build_style=meta
+short_desc="Xorg cursor theme inspired and based on plan9 cursors"
+maintainer="dkwo <nicolopiazzalunga@gmail.com>"
+license="unknown"
+homepage="https://xn--1xa.duncano.de/"
+distfiles="https://xn--1xa.duncano.de/files/xcursor-plan9-${version}.tar.xz"
+checksum=5630de3e3e3ad4d32ae3476024f548c51736b7c841fd236952fc42b33d4f1cac
+
+do_install() {
+	vinstall index.theme 644 /usr/share/icons/plan9
+	vcopy cursors /usr/share/icons/plan9
+	vinstall cursor.theme 644 /usr/share/icons/plan9
+}
