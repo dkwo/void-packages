@@ -1,0 +1,508 @@
+From 99d1761a5fd656f0e5d1d41d6e8cc01374c58719 Mon Sep 17 00:00:00 2001
+From: Matthias <matthias314@posteo.net>
+Date: Thu, 2 Jun 2022 17:05:48 -0400
+Subject: [PATCH] modified TeX mode
+
+---
+ manual/aspell.1                |   3 +
+ manual/aspell.texi             |  81 ++++++++++-
+ modules/filter/context.cpp     |   1 +
+ modules/filter/modes/tex.amf   |   5 +-
+ modules/filter/tex-filter.info |  56 ++++++--
+ modules/filter/tex.cpp         | 246 +++++++++++++++++++--------------
+ 6 files changed, 276 insertions(+), 116 deletions(-)
+
+diff --git a/modules/filter/context.cpp b/modules/filter/context.cpp
+index 0d0f605..afe01ae 100644
+--- a/modules/filter/context.cpp
++++ b/modules/filter/context.cpp
+@@ -63,6 +63,7 @@ namespace {
+     
+   PosibErr<bool> ContextFilter::setup(Config * config){
+     name_ = "context-filter";
++    order_num_ = 0.15;
+     StringList delimiters;
+     StackPtr<StringEnumeration> delimiterpairs;
+     const char * delimiterpair=NULL;
+diff --git a/modules/filter/modes/tex.amf b/modules/filter/modes/tex.amf
+index beb32dc..758fcc0 100644
+--- a/modules/filter/modes/tex.amf
++++ b/modules/filter/modes/tex.amf
+@@ -6,5 +6,8 @@ MAGIC /0:256:^[ \t]*\\documentclass\[[^\[\]]*\]\{[^\{\}]*\}/tex
+ 
+ DESCRIPTION mode for checking TeX/LaTeX documents
+ 
+-FILTER url
++FILTER context
++OPTION clear-context-delimiters
++OPTION add-context-delimiters aspell:off aspell:on
++OPTION enable-context-visible-first
+ FILTER tex
+diff --git a/modules/filter/tex-filter.info b/modules/filter/tex-filter.info
+index 81d9c5b..14d1e93 100644
+--- a/modules/filter/tex-filter.info
++++ b/modules/filter/tex-filter.info
+@@ -16,15 +16,35 @@ DESCRIPTION check TeX comments
+ DEFAULT false
+ ENDOPTION
+ 
++OPTION ignore-env
++TYPE list
++DESCRIPTION LaTeX environments to be ignored
++# LaTeX
++#DEFAULT thebibliography
++DEFAULT equation
++DEFAULT eqnarray
++# AMS-LaTeX
++DEFAULT gather
++DEFAULT multline
++DEFAULT align
++DEFAULT flalign
++DEFAULT alignat
++# Babel
++DEFAULT otherlanguage
++ENDOPTION
++
+ OPTION command
+ TYPE list
+ DESCRIPTION TeX commands
++# plain TeX / LaTeX
+ DEFAULT addtocounter pp
+ DEFAULT addtolength pp
+-DEFAULT alpha p
++DEFAULT alph p
++DEFAULT Alph p
+ DEFAULT arabic p
+ DEFAULT fnsymbol p
+ DEFAULT roman p
++DEFAULT Roman p
+ DEFAULT stepcounter p
+ DEFAULT setcounter pp
+ DEFAULT usecounter p
+@@ -42,7 +62,8 @@ DEFAULT newtheorem poPo
+ DEFAULT newfont pp
+ DEFAULT documentclass op
+ DEFAULT usepackage op
+-DEFAULT begin po
++# DO NOT change the next line!
++DEFAULT begin so
+ DEFAULT end p
+ DEFAULT setlength pp
+ DEFAULT addtolength pp
+@@ -54,15 +75,17 @@ DEFAULT hyphenation p
+ DEFAULT pagenumbering p
+ DEFAULT pagestyle p
+ DEFAULT addvspace p
+-DEFAULT framebox ooP
++DEFAULT framebox ooT
+ DEFAULT hspace p
+ DEFAULT vspace p
+-DEFAULT makebox ooP
+-DEFAULT parbox ooopP
+-DEFAULT raisebox pooP
++DEFAULT hbox T
++DEFAULT vbox T
++DEFAULT makebox ooT
++DEFAULT parbox ooopT
++DEFAULT raisebox pooT
+ DEFAULT rule opp
+ DEFAULT sbox pO
+-DEFAULT savebox pooP
++DEFAULT savebox pooT
+ DEFAULT usebox p
+ DEFAULT include p
+ DEFAULT includeonly p
+@@ -76,13 +99,30 @@ DEFAULT fontshape p
+ DEFAULT fontsize pp
+ DEFAULT usefont pppp
+ DEFAULT documentstyle op
+-DEFAULT cite p
++DEFAULT cite Op
+ DEFAULT nocite p
+ DEFAULT psfig p
+ DEFAULT selectlanguage p
+ DEFAULT includegraphics op
+ DEFAULT bibitem op
++DEFAULT bibliography p
++DEFAULT bibliographystyle p
+ DEFAULT geometry p
++# AMS-LaTeX
++DEFAULT address p
++DEFAULT email p
++DEFAULT mathbb p
++DEFAULT mathfrak p
++DEFAULT eqref p
++DEFAULT text T
++DEFAULT intertext T
++DEFAULT DeclareMathOperator pp
++DEFAULT DeclareMathAlphabet ppppp
++# hyperref
++DEFAULT href pP
++DEFAULT autoref p
++DEFAULT url p
++DEFAULT texorpdfstring Pp
+ ENDOPTION
+ 
+ #OPTION multi-byte
+diff --git a/modules/filter/tex.cpp b/modules/filter/tex.cpp
+index 19ab63c..9809c3e 100644
+--- a/modules/filter/tex.cpp
++++ b/modules/filter/tex.cpp
+@@ -32,17 +32,17 @@ namespace {
+   class TexFilter : public IndividualFilter 
+   {
+   private:
+-    enum InWhat {Name, Opt, Parm, Other, Swallow};
++    enum InWhat {Text, Name, Comment, InlineMath, DisplayMath, EnvName};
+     struct Command {
+       InWhat in_what;
+       String name;
+-      const char * do_check;
++      bool skip;
++      int size;
++      const char * args;
+       Command() {}
+-      Command(InWhat w) : in_what(w), do_check("P") {}
++      Command(InWhat w, bool s, const char *a) : in_what(w), skip(s), args(a), size(0) {}
+     };
+ 
+-    bool in_comment;
+-    bool prev_backslash;
+     Vector<Command> stack;
+ 
+     class Commands : public StringMap {
+@@ -53,11 +53,11 @@ namespace {
+     
+     Commands commands;
+     bool check_comments;
+-    
+-    inline void push_command(InWhat);
+-    inline void pop_command();
+ 
+-    bool end_option(char u, char l);
++    StringMap ignore_env;
++
++    inline bool push_command(InWhat, bool, const char *);
++    inline bool pop_command();
+ 
+     inline bool process_char(FilterChar::Chr c);
+     
+@@ -71,14 +71,17 @@ namespace {
+   //
+   //
+ 
+-  inline void TexFilter::push_command(InWhat w) {
+-    stack.push_back(Command(w));
++  inline bool TexFilter::push_command(InWhat w, bool skip, const char *args = "") {
++    stack.push_back(Command(w, skip, args));
++    return skip;
+   }
+ 
+-  inline void TexFilter::pop_command() {
+-    stack.pop_back();
+-    if (stack.empty())
+-      push_command(Parm);
++  inline bool TexFilter::pop_command() {
++    bool skip = stack.back().skip;
++    if (stack.size() > 1) {
++      stack.pop_back();
++    }
++    return skip;
+   }
+ 
+   //
+@@ -96,133 +99,167 @@ namespace {
+     
+     check_comments = opts->retrieve_bool("f-tex-check-comments");
+ 
++    opts->retrieve_list("f-tex-ignore-env", &ignore_env);
++
+     reset();
+     return true;
+   }
+   
+   void TexFilter::reset() 
+   {
+-    in_comment = false;
+-    prev_backslash = false;
+     stack.resize(0);
+-    push_command(Parm);
++    push_command(Text, false);
+   }
+ 
+ #  define top stack.back()
++#  define next_arg       if (*top.args) { ++top.args; if (!*top.args) pop_command(); }
++#  define skip_opt_args  if (*top.args) { while (*top.args == 'O' || *top.args == 'o') { ++top.args; } if (!*top.args) pop_command(); }
++
+ 
+   // yes this should be inlined, it is only called once
+   inline bool TexFilter::process_char(FilterChar::Chr c) 
+   {
+-    // deal with comments
+-    if (c == '%' && !prev_backslash) in_comment = true;
+-    if (in_comment && c == '\n')     in_comment = false;
+-
+-    prev_backslash = false;
+-
+-    if (in_comment)                  return !check_comments;
++    top.size++;
+ 
+     if (top.in_what == Name) {
+       if (asc_isalpha(c)) {
+ 
+ 	top.name += c;
+-	return true;
++	return top.skip;
+ 
+       } else {
+-
+-	if (top.name.empty() && (c == '@')) {
+-	  top.name += c;
+-	  return true;
+-	}
+-	  
+-	top.in_what = Other;
++	bool in_name;
+ 
+ 	if (top.name.empty()) {
+-	  top.name.clear();
+ 	  top.name += c;
+-	  top.do_check = commands.lookup(top.name.c_str());
+-	  if (top.do_check == 0) top.do_check = "";
+-	  return !asc_isspace(c);
++	  in_name = true;
++	} else {
++	  top.size--;
++	  in_name = false;
+ 	}
+ 
+-	top.do_check = commands.lookup(top.name.c_str());
+-	if (top.do_check == 0) top.do_check = "";
++	String name = top.name;
+ 
+-	if (asc_isspace(c)) { // swallow extra spaces
+-	  top.in_what = Swallow;
+-	  return true;
+-	} else if (c == '*') { // ignore * at end of commands
+-	  return true;
++	pop_command();
++
++	const char *args = commands.lookup(name.c_str());
++
++	if (name == "begin")
++	  push_command(top.in_what, top.skip);
++	  // args = "s";
++	else if (name == "end")
++	  pop_command();
++
++	// we might still be waiting for arguments
++	skip_opt_args;
++	if (*top.args) {
++	  next_arg;
++	} else if (name == "[") {
++	  // \[
++	  push_command(DisplayMath, true);
++	} else if (name == "]") {
++	  // \]
++	  pop_command();  // pop DisplayMath
++	} else if (name == "(") {
++	  // \(
++	  push_command(InlineMath, true);
++	} else if (name == ")") {
++	  // \)
++	  pop_command();  // pop InlineMath
++	} else if (args && *args) {
++	  push_command(top.in_what, top.skip, args);
+ 	}
+ 	
+-	// continue o...
++	if (in_name || c == '*')  // better way to deal with "*"?
++	  return true;
++	else
++	  return process_char(c);  // start over
+       }
+ 
+-    } else if (top.in_what == Swallow) {
+-
+-      if (asc_isspace(c))
+-	return true;
+-      else
+-	top.in_what = Other;
+     }
+ 
+-    if (c == '{')
+-      while (*top.do_check == 'O' || *top.do_check == 'o') 
+-	++top.do_check;
+-
+-    if (*top.do_check == '\0')
+-      pop_command();
+-
+-    if (c == '{') {
+-
+-      if (top.in_what == Parm || top.in_what == Opt || *top.do_check == '\0')
+-	push_command(Parm);
++    if (top.in_what == Comment) {
++      if (c == '\n') {
++	pop_command();
++	return false;  // preserve newlines
++      } else {
++        return top.skip;
++      }
++    }
+ 
+-      top.in_what = Parm;
++    if (c == '%') {
++      push_command(Comment, !check_comments);
+       return true;
+     }
+ 
+-    if (top.in_what == Other) {
+-
+-      if (c == '[') {
+-
+-	top.in_what = Opt;
+-	return true;
+-
+-      } else if (asc_isspace(c)) {
+-
+-	return true;
+-
++    if (c == '$') {
++      if (top.in_what != InlineMath) {
++	// $ begin
++	return push_command(InlineMath, true);
++      } else if (top.size > 1) {
++	// $ end
++	return pop_command();
+       } else {
+-	
+-	pop_command();
+-
++	// $ -> $$
++	pop_command();  // pop InlineMath
++	if (top.in_what == DisplayMath)
++	  // $$ end
++	  return pop_command();
++	else
++	  // $$ start
++	  return push_command(DisplayMath, true);
+       }
+-
+-    } 
++    }
+ 
+     if (c == '\\') {
+-      prev_backslash = true;
+-      push_command(Name);
+-      return true;
++      return push_command(Name, true);
+     }
+ 
+-    if (top.in_what == Parm) {
++    if (c == '}' || c == ']') {
++      if (top.in_what == EnvName) {
++	String env = top.name;
++	if (env.back() == '*')
++	  env.pop_back();
++	bool skip = pop_command();
++	next_arg;
++	if (ignore_env.have(env)) {
++	  stack[stack.size()-2].skip = true;
++	}
++	return skip;
++      } else {
++	bool skip = pop_command();
++	next_arg;
++	return skip;
++      }
++    }
+ 
+-      if (c == '}')
+-	return end_option('P','p');
++    if (c == '{') {
++      skip_opt_args;
++      if (*top.args == 'T')
++	return push_command(Text, false);
++      else if (*top.args == 's')
++	return push_command(EnvName, true);
+       else
+-	return *top.do_check == 'p';
++	return push_command(top.in_what, top.skip || *top.args == 'p');
++    }
+ 
+-    } else if (top.in_what == Opt) {
++    if (c == '[') {
++      if (*top.args == 'O' || *top.args == 'o' || !*top.args) {
++	return push_command(top.in_what, top.skip || *top.args == 'o');
++      }
++      // else: fall-through to treat it as a one-letter argument
++    }
+ 
+-      if (c == ']')
+-	return end_option('O', 'o');
+-      else
+-	return *top.do_check == 'o';
++    if (top.in_what == EnvName)
++      top.name += c;
+ 
++    // we might still be waiting for arguments
++    if (!asc_isspace(c)) {
++      skip_opt_args;
++      next_arg;
+     }
+ 
+-    return false;
++    return top.skip;
+   }
+ 
+   void TexFilter::process(FilterChar * & str, FilterChar * & stop)
+@@ -230,19 +267,24 @@ namespace {
+     FilterChar * cur = str;
+ 
+     while (cur != stop) {
+-      if (process_char(*cur))
++      bool hyphen = top.in_what == Name && top.size == 0
++	&& (*cur == '-' || *cur == '/') && cur-str >= 2;
++      if (process_char(*cur)) {
+ 	*cur = ' ';
++      }
++      if (hyphen) {
++	FilterChar *i = cur-2, *j = cur+1;
++	*i = FilterChar(*i, FilterChar::sum(i, j));
++	i++;
++	while (j != stop)
++	  *(i++) = *(j++);
++	*(stop-2) = *(stop-1) = FilterChar(0, 0);
++	cur--;
++      }
+       ++cur;
+     }
+   }
+ 
+-  bool TexFilter::end_option(char u, char l) {
+-    top.in_what = Other;
+-    if (*top.do_check == u || *top.do_check == l)
+-      ++top.do_check;
+-    return true;
+-  }
+-
+   //
+   // TexFilter::Commands
+   //
+@@ -252,14 +294,14 @@ namespace {
+     while (!asc_isspace(value[p1])) {
+       if (value[p1] == '\0') 
+ 	return make_err(bad_value, value,"",
+-                        _("a string of 'o','O','p',or 'P'"));
++                        _("a string of 'o', 'O', 'p', 'P', 's' or 'T'"));
+       ++p1;
+     }
+     int p2 = p1 + 1;
+     while (asc_isspace(value[p2])) {
+       if (value[p2] == '\0') 
+ 	return make_err(bad_value, value,"",
+-                        _("a string of 'o','O','p',or 'P'"));
++                        _("a string of 'o', 'O', 'p', 'P', 's' or 'T'"));
+       ++p2;
+     }
+     String t1; t1.assign(value,p1);
