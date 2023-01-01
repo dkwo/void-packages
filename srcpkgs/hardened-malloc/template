@@ -1,0 +1,34 @@
+# Template file for 'hardened-malloc'
+pkgname=hardened-malloc
+version=12
+revision=1
+archs="~i686* ~armv6l* ~armv7l*" # requires 64-bit
+checkdepends="python3"
+short_desc="Hardened allocator designed for modern systems"
+maintainer="dkwo <npiazza@disroot.org>"
+license="MIT"
+homepage="https://github.com/GrapheneOS/hardened_malloc"
+changelog="https://github.com/GrapheneOS/hardened_malloc/releases"
+distfiles="https://github.com/GrapheneOS/hardened_malloc/archive/refs/tags/${version}.tar.gz"
+checksum=0bc99987ff149455cd790b1f99566094baeb2212c5ec116ac526685999a29db5
+nocross=yes
+# /etc/ld.so.preload libhardened_malloc.so
+# firefox broken
+
+do_build() {
+	make VARIANT=default
+	make VARIANT=light
+}
+
+do_install() {
+	vinstall out/libhardened_malloc.so 4644 usr/lib/
+	vinstall out-light/libhardened_malloc-light.so 4644 usr/lib/
+}
+
+do_check() {
+	make test
+}
+
+post_install() {
+	vlicense LICENSE
+}
