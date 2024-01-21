@@ -10,7 +10,7 @@
 pkgname=rust-linux6.6
 version=1.71.1
 revision=1
-hostmakedepends="cmake curl pkg-config python3 tar cargo-bootstrap-linux6.6 rust-bootstrap-linux6.6"
+hostmakedepends="cmake curl pkg-config python3 tar cargo-bootstrap-linux6.6"
 makedepends="libffi-devel ncurses-devel libxml2-devel zlib-devel llvm15"
 depends="rust-std-linux6.6 gcc"
 short_desc="Safe, concurrent, practical systems language"
@@ -35,11 +35,11 @@ if [ "$XBPS_TARGET_LIBC" = "musl" ]; then
 fi
 
 if [ "$CROSS_BUILD" ]; then
-	hostmakedepends+=" rust llvm15"
+	hostmakedepends+=" rust-linux6.6 llvm15"
 	# These are required for building the buildhost's stage0/1
 	hostmakedepends+=" libffi-devel libxml2-devel ncurses-devel zlib-devel"
 else
-	hostmakedepends+=" rust-bootstrap"
+	hostmakedepends+=" rust-bootstrap-linux6.6"
 fi
 
 # we need this because cargo verifies checksums of all files in vendor

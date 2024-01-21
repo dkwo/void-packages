@@ -27,7 +27,7 @@ noshlibprovides=yes
 preserve=yes
 
 hostmakedepends="tar xz bc elfutils-devel flex gmp-devel kmod libmpc-devel
- openssl-devel perl uboot-mkimage cpio pahole python3 zstd rust rust-linux6.6 cargo-linux6.6 rust-bindgen-linux6.6 rust-src-linux6.6 libclang"
+ openssl-devel perl uboot-mkimage cpio pahole python3 zstd rust-linux6.6 cargo-linux6.6 rust-bindgen-linux6.6 rust-src-linux6.6 libclang"
 
 _kernver="${version}_${revision}"
 triggers="kernel-hooks"
