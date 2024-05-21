@@ -1,7 +1,7 @@
 # Template file for 'lsp-plugins'
 pkgname=lsp-plugins
 version=1.2.14
-revision=1
+revision=2
 build_style=gnu-makefile
 make_use_env=yes
 make_build_args="VERBOSE=0"
@@ -38,5 +38,13 @@ lsp-plugins-devel_package() {
 				vmove ${f#$DESTDIR/}
 			fi
 		done
+	}
+}
+
+lsp-plugins-lv2_package() {
+	depends="lv2>=0.6.0"
+	pkg_install() {
+		vmove usr/lib/liblsp-r3d-glx-lib*
+		vmove usr/lib/lv2
 	}
 }
