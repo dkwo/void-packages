@@ -148,8 +148,8 @@ libnvidia-glcore.so.390.87 nvidia390-libs-390.87_1 ignore
 libnvidia-glsi.so.346.72 nvidia-libs-346.72_1 ignore
 libnvidia-fatbinaryloader.so.390.157 nvidia390-libs-390.154_1 ignore
 libnvidia-fatbinaryloader.so.430.40 nvidia-libs-430.40_1 ignore
-libglapi.so.0 libglapi-7.11_1
-libgbm.so.1 libgbm-9.0_1
+libglapi.so.0 libglapi-asahi-7.11_1
+libgbm.so.1 libgbm-asahi-9.0_1
 libOpenGL.so.0 libglvnd-1.3.0_1
 libGLX.so.0 libglvnd-1.3.0_1
 librsvg-2.so.2 librsvg-2.26.0_1
@@ -1226,7 +1226,7 @@ libbluray.so.2 libbluray-1.0.0_1
 libnfs.so.14 libnfs-5.0.1_1
 libzip.so.5 libzip-1.7.3_2
 libluajit-5.1.so.2 LuaJIT-2.0.0_1
-libOSMesa.so.8 libOSMesa-9.1_1
+libOSMesa.so.8 libOSMesa-asahi-9.1_1
 libtaginfo.so.1 libtaginfo-0.1.3_1
 libtaginfo_c.so.0 libtaginfo-0.1.3_1
 libaa.so.1 aalib-1.4rc4_2

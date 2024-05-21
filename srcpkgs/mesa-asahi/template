@@ -100,7 +100,6 @@ libglapi-asahi_package() {
 libgbm-asahi_package() {
 	short_desc="Mesa Generic buffer management API - runtime"
 	conflicts="libgbm"
-	provides="libgbm"
 	pkg_install() {
 		vmove "usr/lib/libgbm.so.*"
 	}
