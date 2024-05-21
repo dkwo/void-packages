@@ -3,18 +3,19 @@ pkgname=bankstown
 version=1.1.0
 revision=1
 build_style=cargo
-hostmakedepends=""
 makedepends="lv2"
-short_desc="A barebones bass enhancer"
+depends="lv2>=0.6.0"
+short_desc="Barebones bass enhancer"
 maintainer="Orphaned <orphan@voidlinux.org>"
 license="MIT"
 homepage="https://github.com/chadmed/bankstown"
-distfiles="https://github.com/chadmed/bankstown/archive/refs/tags/1.1.0.tar.gz"
+distfiles="https://github.com/chadmed/bankstown/archive/refs/tags/${version}.tar.gz"
 checksum=e877508b73fe90774d74526d838f75e8ea278bdbcee0a1f92e3eca67ed734675
 
 do_install() {
-	vmkdir usr/lib64/lv2/bankstown.lv2/
-	vinstall target/aarch64-unknown-linux-gnu/release/libbankstown.so 755 usr/lib64/lv2/bankstown.lv2/bankstown.so
-	vinstall bankstown.ttl 644 usr/lib64/lv2/bankstown.lv2/bankstown.ttl
-	vinstall manifest.ttl 644 usr/lib64/lv2/bankstown.lv2/manifest.ttl
+	vmkdir usr/lib/lv2/bankstown.lv2/
+	vinstall target/$XBPS_RUST_TARGET/release/libbankstown.so 755 usr/lib/lv2/bankstown.lv2/
+	vinstall bankstown.ttl 644 usr/lib/lv2/bankstown.lv2/
+	vinstall manifest.ttl 644 usr/lib/lv2/bankstown.lv2/
+	vlicense LICENSE
 }
