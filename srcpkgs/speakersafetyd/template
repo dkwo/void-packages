@@ -15,14 +15,11 @@ make_dirs="/var/lib/speakersafetyd/blackbox 0755 root root"
 
 do_install() {
 	vbin target/${XBPS_RUST_TARGET}/release/speakersafetyd
-
 	vinstall 95-speakersafetyd.rules 644 usr/lib/udev/rules.d/
-	vmkdir usr/share/speakersafetyd/apple
+
 	for f in conf/apple/*; do
 		vinstall "$f" 644 usr/share/speakersafetyd/apple
 	done
-	vmkdir usr/lib/tmpfiles.d
-	vinstall speakersafetyd.tmpfiles 644 usr/lib/tmpfiles.d speakersafetyd.conf
 
 	vlicense LICENSE
 	vsv speakersafetyd
