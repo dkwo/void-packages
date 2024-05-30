@@ -1,7 +1,7 @@
 # Template file for 'mesa-asahi'
 pkgname=mesa-asahi
 version=24.2.0
-revision=1
+revision=20240527
 build_style=meson
 _llvmver=17
 #Disable LTO flag should be present, see https://gitlab.freedesktop.org/mesa/mesa/-/issues/6911
@@ -23,8 +23,8 @@ maintainer="Orphaned <orphan@voidlinux.org>"
 license="MIT, LGPL-2.1-or-later"
 homepage="https://www.mesa3d.org/"
 changelog="https://docs.mesa3d.org/relnotes.html"
-distfiles="https://gitlab.freedesktop.org/asahi/mesa/-/archive/main/mesa-main.tar.gz"
-checksum=1b8b32aa91c4da1fdcf92a00bec945e95097bb018f7071f7efa72d40b10ef5d8
+distfiles="https://gitlab.freedesktop.org/asahi/mesa/-/archive/asahi-20240527/mesa-asahi-20240527.tar.gz" 
+checksum=aca4991240f3d25617762d0c8b9644ad05e3b45791bb81f048fc304d44260fe0
 conflicts="mesa"
 
 build_options="wayland"
@@ -100,7 +100,6 @@ libglapi-asahi_package() {
 libgbm-asahi_package() {
 	short_desc="Mesa Generic buffer management API - runtime"
 	conflicts="libgbm"
-	provides="libgbm"
 	pkg_install() {
 		vmove "usr/lib/libgbm.so.*"
 	}
