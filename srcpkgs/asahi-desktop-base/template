@@ -1,0 +1,24 @@
+# Template file for 'asahi-desktop-base'
+pkgname=asahi-desktop-base
+version=20240531
+revision=1
+archs="aarch64*"
+build_style=meta
+depends="asahi-base asahi-scripts asahi-audio mesa-asahi-dri mesa-asahi-vaapi mesa-asahi-vdpau "
+short_desc="Void Linux Apple Silicon base desktop support package"
+maintainer="Orphaned <orphan@voidlinux.org>"
+license="Public Domain"
+
+do_install() {
+
+	# pipewire
+	vinstall "${FILESDIR}/10-wireplumber.conf" 644 etc/pipewire/pipewire.conf.d/ 10-wireplumber.conf
+	vinstall "${FILESDIR}/20-pipewire-pulse.conf" 644 /etc/pipewire/pipewire.conf.d/ 20-pipewire-pulse.conf
+
+	# autostart pipewire
+	vinstall "${FILESDIR}/pipewire.desktop" 644 etc/xdg/autostart pipewire.desktop
+
+	# x11
+	vinstall "${FILESDIR}/30-modeset.conf" 644 etc/X11/x11.conf.d/ 30-modeset.conf
+
+}
