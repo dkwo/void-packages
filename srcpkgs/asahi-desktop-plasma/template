@@ -1,0 +1,16 @@
+# Template file for 'asahi-desktop-plasma'
+pkgname=asahi-desktop-plasma
+version=20240531
+revision=1
+archs="aarch64*"
+build_style=meta
+depends="asahi-desktop-base plasma-desktop plasma-workspace konsole dolphin sddm sddm-kcm
+ kwalletmanager plasma-nm plasma-vault bluez libspa-bluetooth bluedevil"
+short_desc="Void Linux Apple Silicon KDE Plasma desktop support package"
+maintainer="Orphaned <orphan@voidlinux.org>"
+license="Public Domain"
+
+do_install() {
+	vinstall "${FILESDIR}/sddm.conf" 644 etc/ sddm.conf
+
+}
