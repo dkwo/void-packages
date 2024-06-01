@@ -23,7 +23,7 @@ maintainer="Orphaned <orphan@voidlinux.org>"
 license="MIT, LGPL-2.1-or-later"
 homepage="https://www.mesa3d.org/"
 changelog="https://docs.mesa3d.org/relnotes.html"
-distfiles="https://gitlab.freedesktop.org/asahi/mesa/-/archive/asahi-20240527/mesa-asahi-20240527.tar.gz" 
+distfiles="https://gitlab.freedesktop.org/asahi/mesa/-/archive/asahi-20240527/mesa-asahi-20240527.tar.gz"
 checksum=aca4991240f3d25617762d0c8b9644ad05e3b45791bb81f048fc304d44260fe0
 conflicts="mesa"
 
@@ -31,8 +31,8 @@ build_options="wayland"
 build_options_default="wayland"
 
 # Set subpackages manually
-subpackages="libglapi-asahi libgbm-asahi libgbm-asahi-devel libOSMesa-asahi"
-subpackages+=" mesa-asahi-vaapi mesa-asahi-vdpau mesa-asahi-vulkan-overlay-layer mesa-asahi-dri MesaLib-asahi-devel"
+subpackages="libgbm-asahi libgbm-asahi-devel libOSMesa-asahi mesa-asahi-vaapi mesa-asahi-vdpau
+ mesa-asahi-vulkan-overlay-layer mesa-asahi-dri MesaLib-asahi-devel"
 
 # Replace old mesa pkgs, superseded by libglvnd.
 replaces="libGL>=10_1<19.2.5_2 libEGL>=10_1<19.2.5_2 libGLES>=10_1<19.2.5_2"
@@ -84,22 +84,10 @@ post_install() {
 	done
 }
 
-libglapi-asahi_package() {
-	# this dependency is wrong, it was added as a hack to allow updating
-	# systems with libglapi-32bit after the switch to glvnd
-	# see 927f17347f9c646047c65312c8e8ce1ad88b7832
-	# it can be removed when glibc multilib (with *-32bit packages) is removed
-	depends="libglvnd"
-	conflicts="libglapi"
-	short_desc="Free implementation of the GL API - shared library"
-	pkg_install() {
-		vmove "usr/lib/libglapi.so.*"
-	}
-}
-
 libgbm-asahi_package() {
 	short_desc="Mesa Generic buffer management API - runtime"
 	conflicts="libgbm"
+	shlib_provides="libgbm.so"
 	pkg_install() {
 		vmove "usr/lib/libgbm.so.*"
 	}
