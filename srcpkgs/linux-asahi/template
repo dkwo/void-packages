@@ -1,13 +1,13 @@
 # Template file for 'linux-asahi'
 pkgname=linux-asahi
-version=6.12.4+1
+version=6.12.8+1
 revision=1
 short_desc="Linux kernel and modules for Apple Silicon"
 maintainer="Will Springer <skirmisher@protonmail.com>, dkwo <npiazza@disroot.org>"
 license="GPL-2.0-only"
 homepage="https://asahilinux.org"
 distfiles="https://github.com/AsahiLinux/linux/archive/asahi-${version/+/-}.tar.gz"
-checksum=6543a6aa3fadb65fa24d5b7d4ae2143054229a94bc309512ce7c436104048e2f
+checksum=62d961f415c3a1f3f933f3ef6a52eb200d6abd03c403c2041ed442b17a449a21
 
 python_version=3
 
